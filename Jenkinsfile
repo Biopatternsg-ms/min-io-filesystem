@@ -29,8 +29,8 @@ pipeline {
                     withCredentials([
                         usernamePassword(
                             credentialsId: 'minio-credentials', 
-                            usernameVariable: 'MINIO_USER',
-                            passwordVariable: 'MINIO_PASSWORD'
+                            usernameVariable: 'MINIO_ROOT_USER',
+                            passwordVariable: 'MINIO_ROOT_PASSWORD'
                         )
                     ]) {
                         sh 'docker compose up -d'
@@ -85,15 +85,15 @@ pipeline {
                     withCredentials([
                         usernamePassword(
                             credentialsId: 'minio-credentials', 
-                            usernameVariable: 'MINIO_USER',
-                            passwordVariable: 'MINIO_PASSWORD'
+                            usernameVariable: 'MINIO_ROOT_USER',
+                            passwordVariable: 'MINIO_ROOT_PASSWORD'
                         )
                     ]) {
                         sh """
                             ${MC_BIN} alias set local \
                                 http://localhost:${MINIO_API_PORT} \
-                                ${MINIO_USER} \
-                                ${MINIO_PASSWORD}
+                                ${MINIO_ROOT_USER} \
+                                ${MINIO_ROOT_PASSWORD}
 
                             ${MC_BIN} mb --ignore-existing local/${MINIO_BUCKET}
 
