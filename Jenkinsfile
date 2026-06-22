@@ -18,6 +18,8 @@ pipeline {
                 script {
                     echo "--- Ensuring Docker network '${NETWORK}' exists ---"
                     sh "docker network create ${NETWORK} || true"
+                    echo "--- Attempting to connect Jenkins agent container to network '${NETWORK}' ---"
+                    sh "docker network connect ${NETWORK} \$(hostname) || true"
                 }
             }
         }
@@ -44,20 +46,36 @@ pipeline {
             steps {
                 script {
                     echo "--- Waiting for MinIO to be ready (health endpoint) ---"
-                    // Usa el health endpoint HTTP de MinIO, que no requiere mc ni credenciales.
-                    // El puerto 10000 es el mapeado al host; dentro del contenedor sigue siendo 9000.
                     sh """
+                        GW_IP=\$(ip route | awk '/default/ {print \$3}' 2>/dev/null || true)
+                        if [ -z "\$GW_IP" ]; then
+                            GW_IP="localhost"
+                        fi
+
+                        ENDPOINTS="http://localhost:${MINIO_API_PORT} http://${CONTAINER_NAME}:9000 http://\${GW_IP}:${MINIO_API_PORT}"
+                        WORKING_ENDPOINT=""
+
                         for i in \$(seq 1 20); do
-                            STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${MINIO_API_PORT}/minio/health/live || true)
-                            if [ "\$STATUS" = "200" ]; then
-                                echo "MinIO is ready (HTTP 200)"
-                                exit 0
-                            fi
-                            echo "Attempt \$i/20 — status=\${STATUS}, waiting 3 seconds..."
+                            for ep in \$ENDPOINTS; do
+                                STATUS=\$(curl -s -o /dev/null -w "%{http_code}" \${ep}/minio/health/live || true)
+                                if [ "\$STATUS" = "200" ]; then
+                                    echo "MinIO is ready at \${ep} (HTTP 200)"
+                                    WORKING_ENDPOINT="\${ep}"
+                                    break 2
+                                fi
+                            done
+                            echo "Attempt \$i/20 — MinIO not ready yet, waiting 3 seconds..."
                             sleep 3
                         done
-                        echo "MinIO did not become ready in time"
-                        exit 1
+
+                        if [ -z "\$WORKING_ENDPOINT" ]; then
+                            echo "MinIO did not become ready in time. Printing container status and logs:"
+                            docker ps -a --filter name=${CONTAINER_NAME}
+                            docker logs ${CONTAINER_NAME} | tail -n 50
+                            exit 1
+                        fi
+
+                        echo "\$WORKING_ENDPOINT" > .minio_endpoint
                     """
                 }
             }
@@ -90,10 +108,11 @@ pipeline {
                         )
                     ]) {
                         sh """
+                            MINIO_ENDPOINT=\$(cat .minio_endpoint)
                             ${MC_BIN} alias set local \
-                                http://localhost:${MINIO_API_PORT} \
-                                ${MINIO_ROOT_USER} \
-                                ${MINIO_ROOT_PASSWORD}
+                                "\${MINIO_ENDPOINT}" \
+                                "\$MINIO_ROOT_USER" \
+                                "\$MINIO_ROOT_PASSWORD"
 
                             ${MC_BIN} mb --ignore-existing local/${MINIO_BUCKET}
 
