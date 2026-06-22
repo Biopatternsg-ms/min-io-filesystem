@@ -88,7 +88,7 @@ pipeline {
                     // Descarga mc en el workspace del agente Jenkins.
                     // No requiere que mc esté instalado en la imagen del contenedor.
                     sh """
-                        curl -sSf https://dl.min.io/client/mc/release/linux-amd64/mc -o ${MC_BIN}
+                        curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o ${MC_BIN}
                         chmod +x ${MC_BIN}
                         ${MC_BIN} --version
                     """
