@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         CONTAINER_NAME  = 'minio-filesystem'
-        MINIO_API_PORT  = '9000'
-        MINIO_UI_PORT   = '9001'
+        MINIO_API_PORT  = '10000'
+        MINIO_UI_PORT   = '10001'
         MINIO_BUCKET    = 'biopatternsg-kb'
         NETWORK         = 'general-network'
     }
@@ -71,7 +71,7 @@ pipeline {
                     ]) {
                         sh """
                             docker exec ${CONTAINER_NAME} mc alias set local \
-                                http://localhost:9000 \
+                                http://localhost:10000 \
                                 ${MINIO_USER} \
                                 ${MINIO_PASSWORD}
 

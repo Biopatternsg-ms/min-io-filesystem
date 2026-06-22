@@ -5,8 +5,8 @@ services:
     image: minio/minio:latest
     container_name: minio-filesystem
     ports:
-      - "9000:9000"   # API S3-compatible
-      - "9001:9001"   # Consola web de administración
+      - "10000:9000"   # API S3-compatible
+      - "10001:9001"   # Consola web de administración
     environment:
       # Las credenciales se inyectan como variables de entorno desde Jenkins
       # ¡No hardcodear valores reales aquí!
