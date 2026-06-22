@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: minio-filesystem
+    ports:
+      - "9000:9000"   # API S3-compatible
+      - "9001:9001"   # Consola web de administración
+    environment:
+      # Las credenciales se inyectan como variables de entorno desde Jenkins
+      # ¡No hardcodear valores reales aquí!
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      # Volumen persistente para los datos de MinIO
+      - minio_data:/data
+    restart: always
+    networks:
+      - general-network
+
+networks:
+  general-network:
+    external: true
+
+volumes:
+  minio_data: # Volumen nombrado para persistencia entre reinicios y deployments
