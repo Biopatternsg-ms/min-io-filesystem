@@ -48,7 +48,7 @@ pipeline {
                     // El puerto 10000 es el mapeado al host; dentro del contenedor sigue siendo 9000.
                     sh """
                         for i in \$(seq 1 20); do
-                            STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${MINIO_API_PORT}/minio/health/live)
+                            STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${MINIO_API_PORT}/minio/health/live || true)
                             if [ "\$STATUS" = "200" ]; then
                                 echo "MinIO is ready (HTTP 200)"
                                 exit 0
